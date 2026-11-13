@@ -44,7 +44,9 @@ if not FloatingHealthbars then
 			civilians = true,
 			hostages = true,
 			turrets = true
-		}
+		},
+		presets = {},
+		menu_items = {}
 	}
 
 	function FloatingHealthbars:character_slot_mask()
@@ -82,7 +84,126 @@ if not FloatingHealthbars then
 		end
 	end
 
+	function FloatingHealthbars:load_preset()
+		local function load(name)
+			local preset = name and self.presets[name] or self.default_settings
+
+			for k, v in pairs(self.settings) do
+				if type(preset[k]) == type(v) then
+					self.settings[k] = preset[k]
+					if self.menu_items[k] then
+						self.menu_items[k]:set_value(type(preset[k]) == "boolean" and (preset[k] and "on" or "off") or preset[k])
+						self.menu_items[k]:trigger()
+					end
+				end
+			end
+
+			self:update_healthbar()
+
+			if managers.hud then
+				managers.hud:reset_floating_healthbar()
+			end
+
+			self._last_used_preset = name
+
+			managers.system_menu:show({
+				title = managers.localization:text("menu_floating_healthbars_preset_loaded"),
+				text = managers.localization:text("menu_floating_healthbars_preset_loaded_desc", {
+					PRESET = name and name:pretty(true) or managers.localization:text("menu_floating_healthbars_preset_default")
+				}),
+				button_list = {
+					{
+						text = managers.localization:text("dialog_ok")
+					}
+				}
+			})
+		end
+
+		local button_list = {
+			{
+				text = managers.localization:text("menu_floating_healthbars_preset_default"),
+				callback_func = function() load(nil) end
+			},
+			{
+				no_text = true,
+				no_selection = true
+			}
+		}
+
+		for _, preset_name in pairs(table.map_keys(FloatingHealthbars.presets)) do
+			table.insert(button_list, {
+				text = preset_name:pretty(true),
+				callback_func = function() load(preset_name) end
+			})
+		end
+
+		table.insert(button_list, {
+			no_text = true,
+			no_selection = true
+		})
+
+		table.insert(button_list, {
+			text = managers.localization:text("dialog_cancel"),
+			cancel_button = true
+		})
+
+		managers.system_menu:show({
+			title = managers.localization:text("menu_floating_healthbars_load_preset"),
+			button_list = button_list
+		})
+	end
+
+	function FloatingHealthbars:save_preset()
+		local function save(name)
+			self.presets[name] = deep_clone(self.settings)
+			io.save_as_json(self.presets[name], self.save_path .. name .. ".json")
+
+			self._last_used_preset = name
+
+			managers.system_menu:show({
+				title = managers.localization:text("menu_floating_healthbars_preset_saved"),
+				text = managers.localization:text("menu_floating_healthbars_preset_saved_desc", { PRESET = name:pretty(true) }),
+				button_list = {
+					{
+						text = managers.localization:text("dialog_ok")
+					}
+				}
+			})
+		end
+
+		if not file.DirectoryExists(self.save_path) then
+			file.CreateDirectory(self.save_path)
+		end
+
+		if InputDialog then
+			InputDialog:new():show({
+				title = managers.localization:to_upper_text("menu_floating_healthbars_save_preset"),
+				text = self._last_used_preset,
+				yes = managers.localization:to_upper_text("dialog_ok"),
+				no = managers.localization:to_upper_text("dialog_cancel"),
+				callback = function(text) save(text and text ~= "" and text or "custom") end
+			})
+		else
+			managers.system_menu:show({
+				title = "No BeardLib",
+				text = "BeardLib is not installed, the preset will be saved as 'custom.json'.",
+				button_list = {
+					{
+						text = managers.localization:text("dialog_ok"),
+						callback_func = function() save("custom") end
+					},
+					{
+						text = managers.localization:text("dialog_cancel"),
+						cancel_button = true
+					}
+				}
+			})
+		end
+	end
+
 	function FloatingHealthbars:init()
+		self.default_settings = deep_clone(self.settings)
+
 		if not file.DirectoryExists(self.save_path) then
 			file.CreateDirectory(self.save_path)
 		end
@@ -101,6 +222,8 @@ if not FloatingHealthbars then
 				local name, ext = file:match("^(.+)%.(.+)$")
 				if ext == "dds" or ext == "texture" then
 					self.variants[name] = asset_path .. file
+				elseif ext == "json" and name ~= "settings" then
+					self.presets[name] = io.load_as_json(asset_path .. file)
 				end
 			end
 		end
@@ -111,18 +234,21 @@ if not FloatingHealthbars then
 		self:update_healthbar()
 	end
 
-	Hooks:Add("LocalizationManagerPostInit", "LocalizationManagerPostInitFloatingHealthbars", function (loc)
+	Hooks:Add("LocalizationManagerPostInit", "LocalizationManagerPostInitFloatingHealthbars", function(loc)
 		HopLib:load_localization(FloatingHealthbars.mod_path .. "loc/", loc)
 	end)
 
 	Hooks:Add("MenuManagerBuildCustomMenus", "MenuManagerBuildCustomMenusFloatingHealthbars", function(_, nodes)
 
-		local width_menu_item, min_width_menu_item, max_width_menu_item, width_padding_item, max_scale_x_menu_item, max_scale_y_menu_item
 		local menu_id = "floating_healthbars"
 		local menu_id_size = "floating_healthbars_size"
 		local menu_id_text = "floating_healthbars_text"
 		local menu_id_distance = "floating_healthbars_distance"
 		local menu_id_units = "floating_healthbars_units"
+
+		local function add_item(item)
+			FloatingHealthbars.menu_items[item:name()] = item
+		end
 
 		MenuHelper:NewMenu(menu_id)
 		MenuHelper:NewMenu(menu_id_size)
@@ -130,11 +256,11 @@ if not FloatingHealthbars then
 		MenuHelper:NewMenu(menu_id_distance)
 		MenuHelper:NewMenu(menu_id_units)
 
-		function MenuCallbackHandler:floating_healthbars_value(item)
+		function MenuCallbackHandler:floating_healthbars_value(item, ...)
 			local value = item:value()
 			FloatingHealthbars.settings[item:name()] = value
-			max_scale_x_menu_item:set_enabled(FloatingHealthbars.settings.scale_type > 1)
-			max_scale_y_menu_item:set_enabled(FloatingHealthbars.settings.scale_type > 1)
+			FloatingHealthbars.menu_items.max_scale_x:set_enabled(FloatingHealthbars.settings.scale_type > 1)
+			FloatingHealthbars.menu_items.max_scale_y:set_enabled(FloatingHealthbars.settings.scale_type > 1)
 			if managers.hud then
 				managers.hud:reset_floating_healthbar()
 			end
@@ -147,11 +273,11 @@ if not FloatingHealthbars then
 
 		function MenuCallbackHandler:floating_healthbars_toggle(item)
 			FloatingHealthbars.settings[item:name()] = item:value() == "on"
-			width_menu_item:set_enabled(not FloatingHealthbars.settings.width_by_text)
-			min_width_menu_item:set_enabled(FloatingHealthbars.settings.width_by_text)
-			max_width_menu_item:set_enabled(FloatingHealthbars.settings.width_by_text)
-			width_padding_item:set_enabled(FloatingHealthbars.settings.width_by_text)
-			max_scale_x_menu_item:set_enabled(not FloatingHealthbars.settings.width_by_text)
+			FloatingHealthbars.menu_items.width:set_enabled(not FloatingHealthbars.settings.width_by_text)
+			FloatingHealthbars.menu_items.min_width:set_enabled(FloatingHealthbars.settings.width_by_text)
+			FloatingHealthbars.menu_items.max_width:set_enabled(FloatingHealthbars.settings.width_by_text)
+			FloatingHealthbars.menu_items.width_padding:set_enabled(FloatingHealthbars.settings.width_by_text)
+			FloatingHealthbars.menu_items.max_scale_x:set_enabled(not FloatingHealthbars.settings.width_by_text)
 			if managers.hud then
 				managers.hud:reset_floating_healthbar()
 			end
@@ -164,6 +290,14 @@ if not FloatingHealthbars then
 			end
 		end
 
+		function MenuCallbackHandler:floating_healthbars_load_preset()
+			FloatingHealthbars:load_preset()
+		end
+
+		function MenuCallbackHandler:floating_healthbars_save_preset()
+			FloatingHealthbars:save_preset()
+		end
+
 		function MenuCallbackHandler:floating_healthbars_save()
 			io.save_as_json(FloatingHealthbars.settings, FloatingHealthbars.save_file)
 		end
@@ -173,7 +307,7 @@ if not FloatingHealthbars then
 		for k, v in pairs(variants) do
 			pretty_variants[k] = v:pretty(true)
 		end
-		MenuHelper:AddMultipleChoice({
+		add_item(MenuHelper:AddMultipleChoice({
 			menu_id = menu_id,
 			id = "variant",
 			title = "menu_floating_healthbars_variant",
@@ -183,9 +317,9 @@ if not FloatingHealthbars then
 			value = FloatingHealthbars.settings.variant,
 			callback = "floating_healthbars_value_variant",
 			priority = 99
-		})
+		}))
 
-		MenuHelper:AddMultipleChoice({
+		add_item(MenuHelper:AddMultipleChoice({
 			menu_id = menu_id,
 			id = "fill_direction",
 			title = "menu_floating_healthbars_fill_direction",
@@ -193,9 +327,9 @@ if not FloatingHealthbars then
 			value = FloatingHealthbars.settings.fill_direction,
 			callback = "floating_healthbars_value",
 			priority = 98
-		})
+		}))
 
-		MenuHelper:AddMultipleChoice({
+		add_item(MenuHelper:AddMultipleChoice({
 			menu_id = menu_id,
 			id = "fill_type",
 			title = "menu_floating_healthbars_fill_type",
@@ -203,7 +337,7 @@ if not FloatingHealthbars then
 			value = FloatingHealthbars.settings.fill_type,
 			callback = "floating_healthbars_value",
 			priority = 97
-		})
+		}))
 
 		MenuHelper:AddDivider({
 			menu_id = menu_id,
@@ -247,8 +381,32 @@ if not FloatingHealthbars then
 			priority = 86
 		})
 
+		MenuHelper:AddDivider({
+			menu_id = menu_id,
+			size = 16,
+			priority = 80
+		})
+
+		MenuHelper:AddButton({
+			menu_id = menu_id,
+			id = "load_preset",
+			title = "menu_floating_healthbars_load_preset",
+			desc = "menu_floating_healthbars_load_preset_desc",
+			callback = "floating_healthbars_load_preset",
+			priority = 79
+		})
+
+		MenuHelper:AddButton({
+			menu_id = menu_id,
+			id = "save_preset",
+			title = "menu_floating_healthbars_save_preset",
+			desc = "menu_floating_healthbars_save_preset_desc",
+			callback = "floating_healthbars_save_preset",
+			priority = 78
+		})
+
 		-- Size
-		MenuHelper:AddToggle({
+		add_item(MenuHelper:AddToggle({
 			menu_id = menu_id_size,
 			id = "width_by_text",
 			title = "menu_floating_healthbars_width_by_text",
@@ -256,9 +414,9 @@ if not FloatingHealthbars then
 			value = FloatingHealthbars.settings.width_by_text,
 			callback = "floating_healthbars_toggle",
 			priority = 99
-		})
+		}))
 
-		min_width_menu_item = MenuHelper:AddSlider({
+		add_item(MenuHelper:AddSlider({
 			menu_id = menu_id_size,
 			id = "min_width",
 			title = "menu_floating_healthbars_min_width",
@@ -271,9 +429,9 @@ if not FloatingHealthbars then
 			display_precision = 0,
 			callback = "floating_healthbars_value",
 			priority = 98
-		})
+		}))
 
-		max_width_menu_item = MenuHelper:AddSlider({
+		add_item(MenuHelper:AddSlider({
 			menu_id = menu_id_size,
 			id = "max_width",
 			title = "menu_floating_healthbars_max_width",
@@ -286,9 +444,9 @@ if not FloatingHealthbars then
 			display_precision = 0,
 			callback = "floating_healthbars_value",
 			priority = 97
-		})
+		}))
 
-		width_padding_item = MenuHelper:AddSlider({
+		add_item(MenuHelper:AddSlider({
 			menu_id = menu_id_size,
 			id = "width_padding",
 			title = "menu_floating_healthbars_width_padding",
@@ -301,9 +459,9 @@ if not FloatingHealthbars then
 			display_precision = 0,
 			callback = "floating_healthbars_value",
 			priority = 96
-		})
+		}))
 
-		width_menu_item = MenuHelper:AddSlider({
+		add_item(MenuHelper:AddSlider({
 			menu_id = menu_id_size,
 			id = "width",
 			title = "menu_floating_healthbars_width",
@@ -316,9 +474,9 @@ if not FloatingHealthbars then
 			display_precision = 0,
 			callback = "floating_healthbars_value",
 			priority = 95
-		})
+		}))
 
-		MenuHelper:AddSlider({
+		add_item(MenuHelper:AddSlider({
 			menu_id = menu_id_size,
 			id = "height",
 			title = "menu_floating_healthbars_height",
@@ -330,7 +488,7 @@ if not FloatingHealthbars then
 			display_precision = 0,
 			callback = "floating_healthbars_value",
 			priority = 94
-		})
+		}))
 
 		MenuHelper:AddDivider({
 			menu_id = menu_id_size,
@@ -338,7 +496,7 @@ if not FloatingHealthbars then
 			priority = 90
 		})
 
-		MenuHelper:AddMultipleChoice({
+		add_item(MenuHelper:AddMultipleChoice({
 			menu_id = menu_id_size,
 			id = "scale_type",
 			title = "menu_floating_healthbars_scale_type",
@@ -347,9 +505,9 @@ if not FloatingHealthbars then
 			value = FloatingHealthbars.settings.scale_type,
 			callback = "floating_healthbars_value",
 			priority = 89
-		})
+		}))
 
-		max_scale_x_menu_item = MenuHelper:AddSlider({
+		add_item(MenuHelper:AddSlider({
 			menu_id = menu_id_size,
 			id = "max_scale_x",
 			title = "menu_floating_healthbars_max_scale_x",
@@ -363,9 +521,9 @@ if not FloatingHealthbars then
 			display_precision = 2,
 			callback = "floating_healthbars_value",
 			priority = 88
-		})
+		}))
 
-		max_scale_y_menu_item = MenuHelper:AddSlider({
+		add_item(MenuHelper:AddSlider({
 			menu_id = menu_id_size,
 			id = "max_scale_y",
 			title = "menu_floating_healthbars_max_scale_y",
@@ -379,36 +537,36 @@ if not FloatingHealthbars then
 			display_precision = 2,
 			callback = "floating_healthbars_value",
 			priority = 87
-		})
+		}))
 
 		-- Text
-		MenuHelper:AddMultipleChoice({
+		add_item(MenuHelper:AddMultipleChoice({
 			menu_id = menu_id_text,
 			id = "font",
 			title = "menu_floating_healthbars_font",
-			items = table.remap(FloatingHealthbars.fonts, function (k) return k, "menu_floating_healthbars_font_" .. k end),
+			items = table.remap(FloatingHealthbars.fonts, function(k) return k, "menu_floating_healthbars_font_" .. k end),
 			value = FloatingHealthbars.settings.font,
 			callback = "floating_healthbars_value",
 			priority = 99
-		})
+		}))
 
-		MenuHelper:AddToggle({
+		add_item(MenuHelper:AddToggle({
 			menu_id = menu_id_text,
 			id = "allcaps",
 			title = "menu_floating_healthbars_allcaps",
 			value = FloatingHealthbars.settings.allcaps,
 			callback = "floating_healthbars_toggle",
 			priority = 98
-		})
+		}))
 
-		MenuHelper:AddToggle({
+		add_item(MenuHelper:AddToggle({
 			menu_id = menu_id_text,
 			id = "outline",
 			title = "menu_floating_healthbars_outline",
 			value = FloatingHealthbars.settings.outline,
 			callback = "floating_healthbars_toggle",
 			priority = 97
-		})
+		}))
 
 		MenuHelper:AddDivider({
 			menu_id = menu_id_text,
@@ -416,7 +574,7 @@ if not FloatingHealthbars then
 			priority = 90
 		})
 
-		MenuHelper:AddSlider({
+		add_item(MenuHelper:AddSlider({
 			menu_id = menu_id_text,
 			id = "name_size",
 			title = "menu_floating_healthbars_name_size",
@@ -428,9 +586,9 @@ if not FloatingHealthbars then
 			display_precision = 0,
 			callback = "floating_healthbars_value",
 			priority = 89
-		})
+		}))
 
-		MenuHelper:AddSlider({
+		add_item(MenuHelper:AddSlider({
 			menu_id = menu_id_text,
 			id = "name_x_offset",
 			title = "menu_floating_healthbars_name_x_offset",
@@ -445,9 +603,9 @@ if not FloatingHealthbars then
 			is_percentage = true,
 			callback = "floating_healthbars_value",
 			priority = 88
-		})
+		}))
 
-		MenuHelper:AddSlider({
+		add_item(MenuHelper:AddSlider({
 			menu_id = menu_id_text,
 			id = "name_y_offset",
 			title = "menu_floating_healthbars_name_y_offset",
@@ -462,7 +620,7 @@ if not FloatingHealthbars then
 			is_percentage = true,
 			callback = "floating_healthbars_value",
 			priority = 87
-		})
+		}))
 
 		MenuHelper:AddDivider({
 			menu_id = menu_id_text,
@@ -470,7 +628,7 @@ if not FloatingHealthbars then
 			priority = 80
 		})
 
-		MenuHelper:AddSlider({
+		add_item(MenuHelper:AddSlider({
 			menu_id = menu_id_text,
 			id = "hp_size",
 			title = "menu_floating_healthbars_hp_size",
@@ -482,9 +640,9 @@ if not FloatingHealthbars then
 			display_precision = 0,
 			callback = "floating_healthbars_value",
 			priority = 79
-		})
+		}))
 
-		MenuHelper:AddSlider({
+		add_item(MenuHelper:AddSlider({
 			menu_id = menu_id_text,
 			id = "hp_x_offset",
 			title = "menu_floating_healthbars_hp_x_offset",
@@ -499,9 +657,9 @@ if not FloatingHealthbars then
 			is_percentage = true,
 			callback = "floating_healthbars_value",
 			priority = 78
-		})
+		}))
 
-		MenuHelper:AddSlider({
+		add_item(MenuHelper:AddSlider({
 			menu_id = menu_id_text,
 			id = "hp_y_offset",
 			title = "menu_floating_healthbars_hp_y_offset",
@@ -516,10 +674,10 @@ if not FloatingHealthbars then
 			is_percentage = true,
 			callback = "floating_healthbars_value",
 			priority = 77
-		})
+		}))
 
 		-- Distance
-		MenuHelper:AddSlider({
+		add_item(MenuHelper:AddSlider({
 			menu_id = menu_id_distance,
 			id = "max_distance",
 			title = "menu_floating_healthbars_max_distance",
@@ -533,9 +691,9 @@ if not FloatingHealthbars then
 			display_scale = 0.01,
 			callback = "floating_healthbars_value",
 			priority = 99
-		})
+		}))
 
-		MenuHelper:AddSlider({
+		add_item(MenuHelper:AddSlider({
 			menu_id = menu_id_distance,
 			id = "max_distance_ads",
 			title = "menu_floating_healthbars_max_distance_ads",
@@ -549,9 +707,9 @@ if not FloatingHealthbars then
 			display_scale = 0.01,
 			callback = "floating_healthbars_value",
 			priority = 98
-		})
+		}))
 
-		MenuHelper:AddSlider({
+		add_item(MenuHelper:AddSlider({
 			menu_id = menu_id_distance,
 			id = "vertical_offset",
 			title = "menu_floating_healthbars_vertical_offset",
@@ -564,60 +722,60 @@ if not FloatingHealthbars then
 			display_precision = 1,
 			callback = "floating_healthbars_value",
 			priority = 97
-		})
+		}))
 
 		-- Unit types
-		MenuHelper:AddToggle({
+		add_item(MenuHelper:AddToggle({
 			menu_id = menu_id_units,
 			id = "enemies",
 			title = "menu_floating_healthbars_enemies",
 			value = FloatingHealthbars.settings.enemies,
 			callback = "floating_healthbars_toggle_unit",
 			priority = 99
-		})
+		}))
 
-		MenuHelper:AddToggle({
+		add_item(MenuHelper:AddToggle({
 			menu_id = menu_id_units,
 			id = "friendlies",
 			title = "menu_floating_healthbars_friendlies",
 			value = FloatingHealthbars.settings.friendlies,
 			callback = "floating_healthbars_toggle_unit",
 			priority = 98
-		})
+		}))
 
-		MenuHelper:AddToggle({
+		add_item(MenuHelper:AddToggle({
 			menu_id = menu_id_units,
 			id = "civilians",
 			title = "menu_floating_healthbars_civilians",
 			value = FloatingHealthbars.settings.civilians,
 			callback = "floating_healthbars_toggle_unit",
 			priority = 97
-		})
+		}))
 
-		MenuHelper:AddToggle({
+		add_item(MenuHelper:AddToggle({
 			menu_id = menu_id_units,
 			id = "hostages",
 			title = "menu_floating_healthbars_hostages",
 			value = FloatingHealthbars.settings.hostages,
 			callback = "floating_healthbars_toggle_unit",
 			priority = 96
-		})
+		}))
 
-		MenuHelper:AddToggle({
+		add_item(MenuHelper:AddToggle({
 			menu_id = menu_id_units,
 			id = "turrets",
 			title = "menu_floating_healthbars_turrets",
 			value = FloatingHealthbars.settings.turrets,
 			callback = "floating_healthbars_toggle_unit",
 			priority = 97
-		})
+		}))
 
 		nodes[menu_id] = MenuHelper:BuildMenu(menu_id, { area_bg = "half", back_callback = "floating_healthbars_save" })
 		nodes[menu_id_size] = MenuHelper:BuildMenu(menu_id_size, { area_bg = "half", back_callback = "floating_healthbars_save" })
 		nodes[menu_id_text] = MenuHelper:BuildMenu(menu_id_text, { area_bg = "half", back_callback = "floating_healthbars_save" })
 		nodes[menu_id_distance] = MenuHelper:BuildMenu(menu_id_distance, { area_bg = "half", back_callback = "floating_healthbars_save" })
 		nodes[menu_id_units] = MenuHelper:BuildMenu(menu_id_units, { area_bg = "half", back_callback = "floating_healthbars_save" })
-		MenuHelper:AddMenuItem(nodes["blt_options"], menu_id, "menu_floating_healthbars")
+		MenuHelper:AddMenuItem(nodes.blt_options, menu_id, "menu_floating_healthbars")
 	end)
 
 	FloatingHealthbars:init()

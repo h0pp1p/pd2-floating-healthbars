@@ -17,6 +17,7 @@ function EnemyHealthBar:init(panel, unit)
 	local unit_info = HopLib:unit_info_manager():get_info(unit)
 
 	self._unit = unit
+	self._ext_base = unit:base()
 	self._ext_damage = unit:character_damage()
 	self._ext_movement = unit:movement()
 
@@ -30,7 +31,7 @@ function EnemyHealthBar:init(panel, unit)
 
 	local scale_x, scale_y = 1, 1
 	if settings.scale_type == 2 then
-		local health_factor = ((unit:character_damage()._HEALTH_INIT or 4) / (tweak_data.character.swat.HEALTH_INIT * 0.5)) ^ 0.15
+		local health_factor = ((self._ext_damage._HEALTH_INIT or 4) / (tweak_data.character.swat.HEALTH_INIT * 0.5)) ^ 0.15
 		scale_x = math.map_range_clamped(health_factor, 1, 2, 1, settings.max_scale_x)
 		scale_y = math.map_range_clamped(health_factor, 1, 2, 1, settings.max_scale_y)
 	elseif settings.scale_type == 3 then
@@ -38,7 +39,7 @@ function EnemyHealthBar:init(panel, unit)
 		scale_y = unit_info and (unit_info:is_special() or unit_info:is_boss()) and settings.max_scale_y or 1
 	end
 
-	local unit_name = unit_info and unit_info:nickname() or (unit:base()._tweak_table or "Unknown"):pretty()
+	local unit_name = unit_info and unit_info:nickname() or (self._ext_base._tweak_table or "Unknown"):pretty()
 	self._name_text = self._panel:text({
 		layer = 3,
 		text = settings.allcaps and unit_name:upper() or unit_name,
@@ -240,8 +241,8 @@ function EnemyHealthBar:init(panel, unit)
 
 	self._key = "health_bar" .. tostring(unit:key())
 
-	if unit:base().add_destroy_listener then
-		unit:base():add_destroy_listener(self._key, callback(self, self, "destroy"))
+	if self._ext_base.add_destroy_listener then
+		self._ext_base:add_destroy_listener(self._key, callback(self, self, "destroy"))
 	end
 	managers.hud:add_updator(self._key, callback(self, self, "update"))
 
@@ -401,11 +402,11 @@ function EnemyHealthBar:destroy()
 	end
 
 	if alive(self._unit) then
-		if self._unit:character_damage().remove_listener then
-			self._unit:character_damage():remove_listener(self._key)
+		if self._ext_damage.remove_listener then
+			self._ext_damage:remove_listener(self._key)
 		end
-		if self._unit:base().remove_destroy_listener then
-			self._unit:base():remove_destroy_listener(self._key)
+		if self._ext_base.remove_destroy_listener then
+			self._ext_base:remove_destroy_listener(self._key)
 		end
 		self._unit:unit_data()._healthbar = nil
 	end
