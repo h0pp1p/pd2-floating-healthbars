@@ -45,6 +45,8 @@ if not FloatingHealthbars then
 			civilians = true,
 			hostages = true,
 			turrets = true,
+			damaged_only = false,
+			loud_only = false,
 			bg_tint_color = "FFFFFF",
 			fg_tint_color = "FFFFFF",
 			hp_tint_color = "FFFFFF",
@@ -809,7 +811,33 @@ if not FloatingHealthbars then
 			title = "menu_floating_healthbars_turrets",
 			value = FloatingHealthbars.settings.turrets,
 			callback = "floating_healthbars_toggle_unit",
-			priority = 97
+			priority = 95
+		}))
+
+		MenuHelper:AddDivider({
+			menu_id = menu_id_units,
+			size = 16,
+			priority = 90
+		})
+
+		add_item(MenuHelper:AddToggle({
+			menu_id = menu_id_units,
+			id = "damaged_only",
+			title = "menu_floating_healthbars_damaged_only",
+			desc = "menu_floating_healthbars_damaged_only_desc",
+			value = FloatingHealthbars.settings.damaged_only,
+			callback = "floating_healthbars_toggle",
+			priority = 89
+		}))
+
+		add_item(MenuHelper:AddToggle({
+			menu_id = menu_id_units,
+			id = "loud_only",
+			title = "menu_floating_healthbars_loud_only",
+			desc = "menu_floating_healthbars_loud_only_desc",
+			value = FloatingHealthbars.settings.loud_only,
+			callback = "floating_healthbars_toggle",
+			priority = 88
 		}))
 
 		-- Colors
