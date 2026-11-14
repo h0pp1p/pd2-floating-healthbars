@@ -15,6 +15,7 @@ if not FloatingHealthbars then
 			"core/fonts/system_font",
 		},
 		settings = {
+			last_used_preset = "",
 			variant = "default",
 			fill_direction = 1,
 			fill_type = 1,
@@ -43,7 +44,12 @@ if not FloatingHealthbars then
 			friendlies = true,
 			civilians = true,
 			hostages = true,
-			turrets = true
+			turrets = true,
+			bg_tint_color = "FFFFFF",
+			fg_tint_color = "FFFFFF",
+			hp_tint_color = "FFFFFF",
+			name_text_color = "FFFFFF",
+			hp_text_color = "FFFFFF"
 		},
 		presets = {},
 		menu_items = {}
@@ -104,7 +110,7 @@ if not FloatingHealthbars then
 				managers.hud:reset_floating_healthbar()
 			end
 
-			self._last_used_preset = name
+			self.settings.last_used_preset = name
 
 			managers.system_menu:show({
 				title = managers.localization:text("menu_floating_healthbars_preset_loaded"),
@@ -155,10 +161,12 @@ if not FloatingHealthbars then
 
 	function FloatingHealthbars:save_preset()
 		local function save(name)
+			self.settings.last_used_preset = nil
+
 			self.presets[name] = deep_clone(self.settings)
 			io.save_as_json(self.presets[name], self.save_path .. name .. ".json")
 
-			self._last_used_preset = name
+			self.settings.last_used_preset = name
 
 			managers.system_menu:show({
 				title = managers.localization:text("menu_floating_healthbars_preset_saved"),
@@ -178,7 +186,7 @@ if not FloatingHealthbars then
 		if InputDialog then
 			InputDialog:new():show({
 				title = managers.localization:to_upper_text("menu_floating_healthbars_save_preset"),
-				text = self._last_used_preset,
+				text = self.settings.last_used_preset,
 				yes = managers.localization:to_upper_text("dialog_ok"),
 				no = managers.localization:to_upper_text("dialog_cancel"),
 				callback = function(text) save(text and text ~= "" and text or "custom") end
@@ -245,9 +253,33 @@ if not FloatingHealthbars then
 		local menu_id_text = "floating_healthbars_text"
 		local menu_id_distance = "floating_healthbars_distance"
 		local menu_id_units = "floating_healthbars_units"
+		local menu_id_colors = "floating_healthbars_colors"
 
 		local function add_item(item)
 			FloatingHealthbars.menu_items[item:name()] = item
+			return item
+		end
+
+		local function make_color_box(item)
+			Hooks:PostHook(item, "_layout_gui", "_layout_gui_color_box", function(self, node, row_item)
+				local size = row_item.gui_panel:h() - 4
+				row_item.color_box = row_item.color_box or row_item.gui_panel:rect({
+					layer = node.layers.items + 2
+				})
+				row_item.color_box:set_size(size, size)
+				row_item.color_box:set_position(80, 2)
+				row_item.color_box:set_color(Color(self:value()))
+			end)
+
+			Hooks:PostHook(item, "enter_key_callback", "enter_key_callback_color_box", function(self, row_item)
+				if row_item.color_box then
+					row_item.color_box:set_color(Color(self:value()))
+				end
+			end)
+
+			item:reload()
+
+			return item
 		end
 
 		MenuHelper:NewMenu(menu_id)
@@ -255,6 +287,7 @@ if not FloatingHealthbars then
 		MenuHelper:NewMenu(menu_id_text)
 		MenuHelper:NewMenu(menu_id_distance)
 		MenuHelper:NewMenu(menu_id_units)
+		MenuHelper:NewMenu(menu_id_colors)
 
 		function MenuCallbackHandler:floating_healthbars_value(item, ...)
 			local value = item:value()
@@ -379,6 +412,15 @@ if not FloatingHealthbars then
 			desc = "menu_floating_healthbars_units_desc",
 			next_node = menu_id_units,
 			priority = 86
+		})
+
+		MenuHelper:AddButton({
+			menu_id = menu_id,
+			id = "colors",
+			title = "menu_floating_healthbars_colors",
+			desc = "menu_floating_healthbars_colors_desc",
+			next_node = menu_id_colors,
+			priority = 85
 		})
 
 		MenuHelper:AddDivider({
@@ -770,11 +812,69 @@ if not FloatingHealthbars then
 			priority = 97
 		}))
 
+		-- Colors
+		make_color_box(add_item(MenuHelper:AddInput({
+			menu_id = menu_id_colors,
+			id = "bg_tint_color",
+			title = "menu_floating_healthbars_bg_tint_color",
+			desc = "menu_floating_healthbars_bg_tint_color_desc",
+			value = FloatingHealthbars.settings.bg_tint_color,
+			callback = "floating_healthbars_value",
+			priority = 99
+		})))
+
+		make_color_box(add_item(MenuHelper:AddInput({
+			menu_id = menu_id_colors,
+			id = "fg_tint_color",
+			title = "menu_floating_healthbars_fg_tint_color",
+			desc = "menu_floating_healthbars_fg_tint_color_desc",
+			value = FloatingHealthbars.settings.fg_tint_color,
+			callback = "floating_healthbars_value",
+			priority = 98
+		})))
+
+		make_color_box(add_item(MenuHelper:AddInput({
+			menu_id = menu_id_colors,
+			id = "hp_tint_color",
+			title = "menu_floating_healthbars_hp_tint_color",
+			desc = "menu_floating_healthbars_hp_tint_color_desc",
+			value = FloatingHealthbars.settings.hp_tint_color,
+			callback = "floating_healthbars_value",
+			priority = 97
+		})))
+
+		MenuHelper:AddDivider({
+			menu_id = menu_id_colors,
+			size = 16,
+			priority = 90
+		})
+
+		make_color_box(add_item(MenuHelper:AddInput({
+			menu_id = menu_id_colors,
+			id = "name_text_color",
+			title = "menu_floating_healthbars_name_text_color",
+			desc = "menu_floating_healthbars_name_text_color_desc",
+			value = FloatingHealthbars.settings.name_text_color,
+			callback = "floating_healthbars_value",
+			priority = 89
+		})))
+
+		make_color_box(add_item(MenuHelper:AddInput({
+			menu_id = menu_id_colors,
+			id = "hp_text_color",
+			title = "menu_floating_healthbars_hp_text_color",
+			desc = "menu_floating_healthbars_hp_text_color_desc",
+			value = FloatingHealthbars.settings.hp_text_color,
+			callback = "floating_healthbars_value",
+			priority = 88
+		})))
+
 		nodes[menu_id] = MenuHelper:BuildMenu(menu_id, { area_bg = "half", back_callback = "floating_healthbars_save" })
 		nodes[menu_id_size] = MenuHelper:BuildMenu(menu_id_size, { area_bg = "half", back_callback = "floating_healthbars_save" })
 		nodes[menu_id_text] = MenuHelper:BuildMenu(menu_id_text, { area_bg = "half", back_callback = "floating_healthbars_save" })
 		nodes[menu_id_distance] = MenuHelper:BuildMenu(menu_id_distance, { area_bg = "half", back_callback = "floating_healthbars_save" })
 		nodes[menu_id_units] = MenuHelper:BuildMenu(menu_id_units, { area_bg = "half", back_callback = "floating_healthbars_save" })
+		nodes[menu_id_colors] = MenuHelper:BuildMenu(menu_id_colors, { area_bg = "half", back_callback = "floating_healthbars_save" })
 		MenuHelper:AddMenuItem(nodes.blt_options, menu_id, "menu_floating_healthbars")
 	end)
 

@@ -1,26 +1,26 @@
-function HUDManager:reset_floating_healthbar()
-	if self._unit_healthbar and self._unit_healthbar:alive() then
-		self._unit_healthbar:destroy()
-		self._unit_healthbar = nil
-	end
-
-	self._unit_slotmask_no_walls, self._unit_slot_mask_empty = FloatingHealthbars:character_slot_mask()
-	self._unit_slotmask = self._unit_slotmask_no_walls + managers.slot:get_mask("bullet_blank_impact_targets")
-end
-
-Hooks:PostHook(HUDManager, "init_finalize", "init_finalize_enemy_health_bars", function (self)
-	self._healthbar_panel = self._healthbar_panel or managers.hud:panel(PlayerBase.PLAYER_INFO_HUD_FULLSCREEN_PD2)
-
-	self._next_unit_raycast_t = 0
-
-	self:reset_floating_healthbar()
-end)
-
 local mvec_add = mvector3.add
 local mvec_mul = mvector3.multiply
 local mvec_set = mvector3.set
 local to_vec = Vector3()
-Hooks:PostHook(HUDManager, "update", "update_enemy_health_bars", function (self, t)
+
+function HUDManager:reset_floating_healthbar()
+	self._healthbar_panel = self._healthbar_panel or managers.hud:panel(PlayerBase.PLAYER_INFO_HUD_FULLSCREEN_PD2)
+
+	self._next_unit_raycast_t = 0
+
+	self._unit_slotmask_no_walls, self._unit_slot_mask_empty = FloatingHealthbars:character_slot_mask()
+	self._unit_slotmask = self._unit_slotmask_no_walls + managers.slot:get_mask("bullet_blank_impact_targets")
+
+	if self._unit_healthbar and self._unit_healthbar:alive() then
+		self._unit_healthbar:destroy()
+		self._unit_healthbar = nil
+		self._force_healthbar_update = true
+		self:update_floating_healthbar(0)
+		self._force_healthbar_update = nil
+	end
+end
+
+function HUDManager:update_floating_healthbar(t)
 	if self._next_unit_raycast_t > t then
 		return
 	end
@@ -57,6 +57,9 @@ Hooks:PostHook(HUDManager, "update", "update_enemy_health_bars", function (self,
 	local dmg = alive(unit) and unit:character_damage()
 	if not self._unit_healthbar and dmg and dmg.health_ratio and not dmg._dead and not unit:unit_data().name_label_id then
 		self._unit_healthbar = unit:unit_data()._healthbar or EnemyHealthBar:new(self._healthbar_panel, unit)
-		self._unit_healthbar:show()
+		self._unit_healthbar:show(self._force_healthbar_update)
 	end
-end)
+end
+
+Hooks:PostHook(HUDManager, "init_finalize", "init_finalize_enemy_health_bars", HUDManager.reset_floating_healthbar)
+Hooks:PostHook(HUDManager, "update", "update_enemy_health_bars", HUDManager.update_floating_healthbar)

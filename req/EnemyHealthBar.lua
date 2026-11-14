@@ -45,7 +45,7 @@ function EnemyHealthBar:init(panel, unit)
 		text = settings.allcaps and unit_name:upper() or unit_name,
 		font = FloatingHealthbars.fonts[settings.font] or FloatingHealthbars.fonts[1],
 		font_size = settings.name_size * scale_y,
-		color = Color.white
+		color = Color(settings.name_text_color)
 	})
 	local _, _, w, h = self._name_text:text_rect()
 	self._name_text:set_size(w, h)
@@ -55,7 +55,7 @@ function EnemyHealthBar:init(panel, unit)
 		text = "80 / 80",
 		font = FloatingHealthbars.fonts[settings.font] or FloatingHealthbars.fonts[1],
 		font_size = settings.hp_size * scale_y,
-		color = Color.white
+		color = Color(settings.hp_text_color)
 	})
 	local _, _, w, h = self._hp_text:text_rect()
 	self._hp_text:set_size(w, h)
@@ -80,6 +80,7 @@ function EnemyHealthBar:init(panel, unit)
 		texture = FloatingHealthbars.texture_path,
 		w = self._health_height,
 		h = self._health_height,
+		color = Color(settings.bg_tint_color)
 	})
 	set_texture_rect(bg_left, 0, 0, 32, 32)
 
@@ -89,6 +90,7 @@ function EnemyHealthBar:init(panel, unit)
 		x = self._health_width + self._health_height,
 		w = self._health_height,
 		h = self._health_height,
+		color = Color(settings.bg_tint_color)
 	})
 	set_texture_rect(bg_right, 96, 0, 32, 32)
 
@@ -99,6 +101,7 @@ function EnemyHealthBar:init(panel, unit)
 			x = self._health_height,
 			w = self._health_width,
 			h = self._health_height,
+			color = Color(settings.bg_tint_color)
 		})
 		set_texture_rect(bg_center, 48, 0, 32, 32)
 	else
@@ -107,13 +110,15 @@ function EnemyHealthBar:init(panel, unit)
 			x = self._health_height,
 			w = self._health_width,
 			h = self._health_height,
+			color = Color(settings.bg_tint_color)
 		})
 		for x = 0, self._health_width, self._health_height do
 			local tile = bg_center:bitmap({
 				texture = FloatingHealthbars.texture_path,
 				x = x,
 				w = self._health_height,
-				h = self._health_height
+				h = self._health_height,
+				color = Color(settings.bg_tint_color)
 			})
 			set_texture_rect(tile, 48, 0, 32, 32)
 		end
@@ -130,6 +135,7 @@ function EnemyHealthBar:init(panel, unit)
 		texture = FloatingHealthbars.texture_path,
 		w = self._health_height,
 		h = self._health_height,
+		color = Color(settings.fg_tint_color)
 	})
 	set_texture_rect(fg_left, 0, 96, 32, 32)
 
@@ -139,6 +145,7 @@ function EnemyHealthBar:init(panel, unit)
 		x = self._health_width + self._health_height,
 		w = self._health_height,
 		h = self._health_height,
+		color = Color(settings.fg_tint_color)
 	})
 	set_texture_rect(fg_right, 96, 96, 32, 32)
 
@@ -149,6 +156,7 @@ function EnemyHealthBar:init(panel, unit)
 			x = self._health_height,
 			w = self._health_width,
 			h = self._health_height,
+			color = Color(settings.fg_tint_color)
 		})
 		set_texture_rect(fg_center, 48, 96, 32, 32)
 	else
@@ -157,13 +165,15 @@ function EnemyHealthBar:init(panel, unit)
 			x = self._health_height,
 			w = self._health_width,
 			h = self._health_height,
+			color = Color(settings.fg_tint_color)
 		})
 		for x = 0, self._health_width, self._health_height do
 			local tile = fg_center:bitmap({
 				texture = FloatingHealthbars.texture_path,
 				x = x,
 				w = self._health_height,
-				h = self._health_height
+				h = self._health_height,
+				color = Color(settings.fg_tint_color)
 			})
 			set_texture_rect(tile, 48, 96, 32, 32)
 		end
@@ -180,6 +190,7 @@ function EnemyHealthBar:init(panel, unit)
 		texture = FloatingHealthbars.texture_path,
 		w = self._health_height,
 		h = self._health_height,
+		color = Color(settings.hp_tint_color)
 	})
 	set_texture_rect(self._hp_left, 0, 48, 32, 32)
 
@@ -189,6 +200,7 @@ function EnemyHealthBar:init(panel, unit)
 		x = self._health_width + self._health_height,
 		w = self._health_height,
 		h = self._health_height,
+		color = Color(settings.hp_tint_color)
 	})
 	set_texture_rect(self._hp_right, 96, 48, 32, 32)
 
@@ -197,13 +209,15 @@ function EnemyHealthBar:init(panel, unit)
 		x = self._health_height,
 		w = self._health_width,
 		h = self._health_height,
+		color = Color(settings.hp_tint_color)
 	})
 	if settings.fill_type < 3 then
 		local hp_center_bitmap = self._hp_center:bitmap({
 			texture = FloatingHealthbars.texture_path,
 			w = self._health_width,
 			h = self._health_height,
-			halign = settings.fill_type == 2 and self.FILL_DIRECTION_ALIGNMENT[settings.fill_direction] or "grow"
+			halign = settings.fill_type == 2 and self.FILL_DIRECTION_ALIGNMENT[settings.fill_direction] or "grow",
+			color = Color(settings.hp_tint_color)
 		})
 		set_texture_rect(hp_center_bitmap, 48, 48, 32, 32)
 	else
@@ -215,7 +229,8 @@ function EnemyHealthBar:init(panel, unit)
 				texture = FloatingHealthbars.texture_path,
 				x = x,
 				w = self._health_height,
-				h = self._health_height
+				h = self._health_height,
+				color = Color(settings.hp_tint_color)
 			})
 			set_texture_rect(tile, 48, 48, 32, 32)
 		end
@@ -346,22 +361,31 @@ function EnemyHealthBar:_update_hp()
 	self:_update_outline(self._hp_text)
 end
 
-function EnemyHealthBar:show()
+function EnemyHealthBar:show(instant)
 	if not self:alive() then
 		return
 	end
 
 	self._panel:stop()
-	self._panel:animate(callback(self, self, "_anim_fade_panel"), self._panel:alpha(), 1)
+	if instant then
+		self._panel:set_alpha(1)
+		self:update(0, 0)
+	else
+		self._panel:animate(callback(self, self, "_anim_fade_panel"), self._panel:alpha(), 1)
+	end
 end
 
-function EnemyHealthBar:hide()
+function EnemyHealthBar:hide(instant)
 	if not self:alive() then
 		return
 	end
 
 	self._panel:stop()
-	self._panel:animate(callback(self, self, "_anim_fade_panel"), self._panel:alpha(), 0, callback(self, self, "destroy"))
+	if instant then
+		self:destroy()
+	else
+		self._panel:animate(callback(self, self, "_anim_fade_panel"), self._panel:alpha(), 0, callback(self, self, "destroy"))
+	end
 end
 
 local tmp_vec = Vector3()
