@@ -3,6 +3,10 @@
 Adds customizable healthbars that are displayed above enemies when you aim at them.
 You can customize the style of the healthbar, the direction it fills in, the size (including dynamic scaling based on text or enemy HP) and more in the mod options.
 
+## Presets
+
+You can save and load presets through the menu. Presets will be saved in the `mods/saves/floating_healthbars/` folder and are basically just separate, named settings files that allow you to quickly apply a bunch of settings at once.
+
 ## Creating your own designs
 
 You can use the included `template.png` file to make your own healthbar design to use with the mod. The middle part of the image is what's used as the healthbar and will be stretched to the needed size. Top, middle and bottom row are background, healthbar and foreground respectively. The left and right sides are added to the left and right side of the healthbar. The space in between the squares is safe space to guarantee the UV mapping does not blur edges, make sure to horizontally extend your healthbar design a few pixels outside of the squares if you dont want blurry borders.
