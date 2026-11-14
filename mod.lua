@@ -163,10 +163,21 @@ if not FloatingHealthbars then
 
 	function FloatingHealthbars:save_preset()
 		local function save(name)
-			self.settings.last_used_preset = nil
+			local preset = deep_clone(self.settings)
+			preset.last_used_preset = nil
+			preset.max_distance = nil
+			preset.max_distance_ads = nil
+			preset.vertical_offset = nil
+			preset.enemies = nil
+			preset.friendlies = nil
+			preset.civilians = nil
+			preset.hostages = nil
+			preset.turrets = nil
+			preset.damaged_only = nil
+			preset.loud_only = nil
 
-			self.presets[name] = deep_clone(self.settings)
-			io.save_as_json(self.presets[name], self.save_path .. name .. ".json")
+			self.presets[name] = preset
+			io.save_as_json(preset, self.save_path .. name .. ".json")
 
 			self.settings.last_used_preset = name
 
