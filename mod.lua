@@ -274,23 +274,36 @@ if not FloatingHealthbars then
 		end
 
 		local function make_color_box(item)
-			Hooks:PostHook(item, "_layout_gui", "_layout_gui_color_box", function(self, node, row_item)
-				local size = row_item.gui_panel:h() - 4
-				row_item.color_box = row_item.color_box or row_item.gui_panel:rect({
-					layer = node.layers.items + 2
-				})
-				row_item.color_box:set_size(size, size)
-				row_item.color_box:set_position(80, 2)
-				row_item.color_box:set_color(Color(self:value()))
-			end)
+			function item:_layout_gui(node, row_item, ...)
+				self._node = node
+				self._needs_realignment = true
+				return MenuItemInput._layout_gui(self, node, row_item, ...)
+			end
 
-			Hooks:PostHook(item, "enter_key_callback", "enter_key_callback_color_box", function(self, row_item)
-				if row_item.color_box then
-					row_item.color_box:set_color(Color(self:value()))
+			function item:_layout(row_item, ...)
+				self._row_item = row_item
+
+				local padding = 2
+				local size = row_item.gui_panel:h() - padding * 2
+
+				if self._needs_realignment then
+					self._align_left = self._align_left + size
+					self._needs_realignment = false
 				end
-			end)
 
-			item:reload()
+				row_item.color_box = row_item.color_box or row_item.gui_panel:rect()
+				row_item.color_box:set_layer(row_item.caret:layer())
+				row_item.color_box:set_size(size, size)
+				row_item.color_box:set_position(self._align_left - size, padding)
+				row_item.color_box:set_color(Color(self:value()))
+
+				return MenuItemInput._layout(self, row_item, ...)
+			end
+
+			function item:set_value(...)
+				MenuItemInput.set_value(self, ...)
+				self:reload(self._row_item, self._node)
+			end
 
 			return item
 		end
@@ -315,6 +328,13 @@ if not FloatingHealthbars then
 		function MenuCallbackHandler:floating_healthbars_value_variant(item)
 			self:floating_healthbars_value(item)
 			FloatingHealthbars:update_healthbar(managers.hud and true)
+		end
+
+		function MenuCallbackHandler:floating_healthbars_value_color(item)
+			local value = item:value():upper():gsub("[^A-F0-9]", ""):sub(1, 6)
+			value = value .. string.rep("F", 6 - value:len())
+			item:set_value(value)
+			self:floating_healthbars_value(item)
 		end
 
 		function MenuCallbackHandler:floating_healthbars_toggle(item)
@@ -858,7 +878,7 @@ if not FloatingHealthbars then
 			title = "menu_floating_healthbars_bg_tint_color",
 			desc = "menu_floating_healthbars_bg_tint_color_desc",
 			value = FloatingHealthbars.settings.bg_tint_color,
-			callback = "floating_healthbars_value",
+			callback = "floating_healthbars_value_color",
 			priority = 99
 		})))
 
@@ -868,7 +888,7 @@ if not FloatingHealthbars then
 			title = "menu_floating_healthbars_fg_tint_color",
 			desc = "menu_floating_healthbars_fg_tint_color_desc",
 			value = FloatingHealthbars.settings.fg_tint_color,
-			callback = "floating_healthbars_value",
+			callback = "floating_healthbars_value_color",
 			priority = 98
 		})))
 
@@ -878,7 +898,7 @@ if not FloatingHealthbars then
 			title = "menu_floating_healthbars_hp_tint_color",
 			desc = "menu_floating_healthbars_hp_tint_color_desc",
 			value = FloatingHealthbars.settings.hp_tint_color,
-			callback = "floating_healthbars_value",
+			callback = "floating_healthbars_value_color",
 			priority = 97
 		})))
 
@@ -894,7 +914,7 @@ if not FloatingHealthbars then
 			title = "menu_floating_healthbars_name_text_color",
 			desc = "menu_floating_healthbars_name_text_color_desc",
 			value = FloatingHealthbars.settings.name_text_color,
-			callback = "floating_healthbars_value",
+			callback = "floating_healthbars_value_color",
 			priority = 89
 		})))
 
@@ -904,7 +924,7 @@ if not FloatingHealthbars then
 			title = "menu_floating_healthbars_hp_text_color",
 			desc = "menu_floating_healthbars_hp_text_color_desc",
 			value = FloatingHealthbars.settings.hp_text_color,
-			callback = "floating_healthbars_value",
+			callback = "floating_healthbars_value_color",
 			priority = 88
 		})))
 
