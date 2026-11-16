@@ -20,20 +20,22 @@ if not FloatingHealthbars then
 			fill_direction = 1,
 			fill_type = 1,
 			scale_type = 1,
-			max_scale_x = 2,
-			max_scale_y = 2,
+			max_scale_x = 1.5,
+			max_scale_y = 1,
+			max_scale_name_text = 1,
+			max_scale_hp_text = 1,
 			width_by_text = false,
 			width = 128,
 			height = 20,
 			min_width = 0,
 			max_width = 640,
 			width_padding = 0,
-			name_size = 20,
+			name_size = 18,
 			name_x_offset = 0,
-			name_y_offset = -1,
+			name_y_offset = -0.9,
 			hp_size = 16,
 			hp_x_offset = 0,
-			hp_y_offset = 1,
+			hp_y_offset = 0.9,
 			allcaps = false,
 			font = 1,
 			outline = true,
@@ -320,6 +322,8 @@ if not FloatingHealthbars then
 			FloatingHealthbars.settings[item:name()] = value
 			FloatingHealthbars.menu_items.max_scale_x:set_enabled(FloatingHealthbars.settings.scale_type > 1)
 			FloatingHealthbars.menu_items.max_scale_y:set_enabled(FloatingHealthbars.settings.scale_type > 1)
+			FloatingHealthbars.menu_items.max_scale_name_text:set_enabled(FloatingHealthbars.settings.scale_type > 1)
+			FloatingHealthbars.menu_items.max_scale_hp_text:set_enabled(FloatingHealthbars.settings.scale_type > 1)
 			if managers.hud then
 				managers.hud:reset_floating_healthbar()
 			end
@@ -614,6 +618,38 @@ if not FloatingHealthbars then
 			priority = 87
 		}))
 
+		add_item(MenuHelper:AddSlider({
+			menu_id = menu_id_size,
+			id = "max_scale_name_text",
+			title = "menu_floating_healthbars_max_scale_name_text",
+			desc = "menu_floating_healthbars_max_scale_name_text_desc",
+			disabled = FloatingHealthbars.settings.scale_type == 1,
+			value = FloatingHealthbars.settings.max_scale_name_text,
+			min = 1,
+			max = 5,
+			step = 0.05,
+			show_value = true,
+			display_precision = 2,
+			callback = "floating_healthbars_value",
+			priority = 86
+		}))
+
+		add_item(MenuHelper:AddSlider({
+			menu_id = menu_id_size,
+			id = "max_scale_hp_text",
+			title = "menu_floating_healthbars_max_scale_hp_text",
+			desc = "menu_floating_healthbars_max_scale_hp_text_desc",
+			disabled = FloatingHealthbars.settings.scale_type == 1,
+			value = FloatingHealthbars.settings.max_scale_hp_text,
+			min = 1,
+			max = 5,
+			step = 0.05,
+			show_value = true,
+			display_precision = 2,
+			callback = "floating_healthbars_value",
+			priority = 85
+		}))
+
 		-- Text
 		add_item(MenuHelper:AddMultipleChoice({
 			menu_id = menu_id_text,
@@ -792,7 +828,7 @@ if not FloatingHealthbars then
 			value = FloatingHealthbars.settings.vertical_offset,
 			min = -60,
 			max = 60,
-			step = 5,
+			step = 1,
 			show_value = true,
 			display_precision = 1,
 			callback = "floating_healthbars_value",

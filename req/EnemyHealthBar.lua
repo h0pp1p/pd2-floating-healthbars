@@ -29,14 +29,19 @@ function EnemyHealthBar:init(panel, unit)
 	local center_x = math.round(self._panel:w() * 0.5)
 	local center_y = math.round(self._panel:h() * 0.5)
 
-	local scale_x, scale_y = 1, 1
+	local scale_x, scale_y, scale_name_text, scale_hp_text = 1, 1, 1, 1
 	if settings.scale_type == 2 then
 		local health_factor = ((self._ext_damage._HEALTH_INIT or 4) / (tweak_data.character.swat.HEALTH_INIT * 0.5)) ^ 0.15
 		scale_x = math.map_range_clamped(health_factor, 1, 2, 1, settings.max_scale_x)
 		scale_y = math.map_range_clamped(health_factor, 1, 2, 1, settings.max_scale_y)
+		scale_name_text = math.map_range_clamped(health_factor, 1, 2, 1, settings.max_scale_name_text)
+		scale_hp_text = math.map_range_clamped(health_factor, 1, 2, 1, settings.max_scale_hp_text)
 	elseif settings.scale_type == 3 then
-		scale_x = unit_info and (unit_info:is_special() or unit_info:is_boss()) and settings.max_scale_x or 1
-		scale_y = unit_info and (unit_info:is_special() or unit_info:is_boss()) and settings.max_scale_y or 1
+		local is_boss = unit_info and (unit_info:is_special() or unit_info:is_boss())
+		scale_x = is_boss and settings.max_scale_x or 1
+		scale_y = is_boss and settings.max_scale_y or 1
+		scale_name_text = is_boss and settings.max_scale_name_text or 1
+		scale_hp_text = is_boss and settings.max_scale_hp_text or 1
 	end
 
 	local unit_name = unit_info and unit_info:nickname() or (self._ext_base._tweak_table or "Unknown"):pretty()
@@ -44,7 +49,7 @@ function EnemyHealthBar:init(panel, unit)
 		layer = 3,
 		text = settings.allcaps and unit_name:upper() or unit_name,
 		font = FloatingHealthbars.fonts[settings.font] or FloatingHealthbars.fonts[1],
-		font_size = settings.name_size * scale_y,
+		font_size = settings.name_size * scale_name_text,
 		color = Color(settings.name_text_color)
 	})
 	local _, _, w, h = self._name_text:text_rect()
@@ -54,7 +59,7 @@ function EnemyHealthBar:init(panel, unit)
 		layer = 3,
 		text = "80 / 80",
 		font = FloatingHealthbars.fonts[settings.font] or FloatingHealthbars.fonts[1],
-		font_size = settings.hp_size * scale_y,
+		font_size = settings.hp_size * scale_hp_text,
 		color = Color(settings.hp_text_color)
 	})
 	local _, _, w, h = self._hp_text:text_rect()
