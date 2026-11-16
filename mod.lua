@@ -96,7 +96,7 @@ if not FloatingHealthbars then
 
 	function FloatingHealthbars:load_preset()
 		local function load(name)
-			local preset = name and self.presets[name] or self.default_settings
+			local preset = name and io.file_is_readable(self.presets[name]) and io.load_as_json(self.presets[name]) or self.default_settings
 
 			for k, v in pairs(self.settings) do
 				if type(preset[k]) == type(v) then
@@ -178,8 +178,8 @@ if not FloatingHealthbars then
 			preset.damaged_only = nil
 			preset.loud_only = nil
 
-			self.presets[name] = preset
-			io.save_as_json(preset, self.save_path .. name .. ".json")
+			self.presets[name] = self.save_path .. name .. ".json"
+			io.save_as_json(preset, self.presets[name])
 
 			self.settings.last_used_preset = name
 
@@ -246,7 +246,7 @@ if not FloatingHealthbars then
 				if ext == "dds" or ext == "texture" then
 					self.variants[name] = asset_path .. file
 				elseif ext == "json" and name ~= "settings" then
-					self.presets[name] = io.load_as_json(asset_path .. file)
+					self.presets[name] = asset_path .. file
 				end
 			end
 		end
