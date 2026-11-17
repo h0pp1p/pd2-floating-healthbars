@@ -1,3 +1,5 @@
+---@class EnemyHealthBar
+---@field new fun(...): EnemyHealthBar
 EnemyHealthBar = EnemyHealthBar or class()
 EnemyHealthBar.PANEL_FADE_TIME = 0.25
 EnemyHealthBar.FILL_DIRECTION_ALIGNMENT = {
@@ -5,12 +7,6 @@ EnemyHealthBar.FILL_DIRECTION_ALIGNMENT = {
 	"right",
 	"center"
 }
-
-local function set_texture_rect(bitmap, x, y, w, h)
-	local tex_w, tex_h = bitmap:texture_width(), bitmap:texture_height()
-	local x_ratio, y_ratio = tex_w / 128, tex_h / 128
-	bitmap:set_texture_rect(x * x_ratio, y * y_ratio, w * x_ratio, h * y_ratio)
-end
 
 function EnemyHealthBar:init(panel, unit)
 	local settings = FloatingHealthbars.settings
@@ -87,7 +83,7 @@ function EnemyHealthBar:init(panel, unit)
 		h = self._health_height,
 		color = Color(settings.bg_tint_color)
 	})
-	set_texture_rect(bg_left, 0, 0, 32, 32)
+	EnemyHealthBar.set_texture_rect(bg_left, 0, 0, 32, 32)
 
 	local bg_right = bg:bitmap({
 		layer = -1,
@@ -97,7 +93,7 @@ function EnemyHealthBar:init(panel, unit)
 		h = self._health_height,
 		color = Color(settings.bg_tint_color)
 	})
-	set_texture_rect(bg_right, 96, 0, 32, 32)
+	EnemyHealthBar.set_texture_rect(bg_right, 96, 0, 32, 32)
 
 	if settings.fill_type < 3 then
 		local bg_center = bg:bitmap({
@@ -108,7 +104,7 @@ function EnemyHealthBar:init(panel, unit)
 			h = self._health_height,
 			color = Color(settings.bg_tint_color)
 		})
-		set_texture_rect(bg_center, 48, 0, 32, 32)
+		EnemyHealthBar.set_texture_rect(bg_center, 48, 0, 32, 32)
 	else
 		local bg_center = bg:panel({
 			layer = -1,
@@ -125,7 +121,7 @@ function EnemyHealthBar:init(panel, unit)
 				h = self._health_height,
 				color = Color(settings.bg_tint_color)
 			})
-			set_texture_rect(tile, 48, 0, 32, 32)
+			EnemyHealthBar.set_texture_rect(tile, 48, 0, 32, 32)
 		end
 	end
 
@@ -142,7 +138,7 @@ function EnemyHealthBar:init(panel, unit)
 		h = self._health_height,
 		color = Color(settings.fg_tint_color)
 	})
-	set_texture_rect(fg_left, 0, 96, 32, 32)
+	EnemyHealthBar.set_texture_rect(fg_left, 0, 96, 32, 32)
 
 	local fg_right = fg:bitmap({
 		layer = 1,
@@ -152,7 +148,7 @@ function EnemyHealthBar:init(panel, unit)
 		h = self._health_height,
 		color = Color(settings.fg_tint_color)
 	})
-	set_texture_rect(fg_right, 96, 96, 32, 32)
+	EnemyHealthBar.set_texture_rect(fg_right, 96, 96, 32, 32)
 
 	if settings.fill_type < 3 then
 		local fg_center = fg:bitmap({
@@ -163,7 +159,7 @@ function EnemyHealthBar:init(panel, unit)
 			h = self._health_height,
 			color = Color(settings.fg_tint_color)
 		})
-		set_texture_rect(fg_center, 48, 96, 32, 32)
+		EnemyHealthBar.set_texture_rect(fg_center, 48, 96, 32, 32)
 	else
 		local fg_center = fg:panel({
 			layer = 1,
@@ -180,7 +176,7 @@ function EnemyHealthBar:init(panel, unit)
 				h = self._health_height,
 				color = Color(settings.fg_tint_color)
 			})
-			set_texture_rect(tile, 48, 96, 32, 32)
+			EnemyHealthBar.set_texture_rect(tile, 48, 96, 32, 32)
 		end
 	end
 
@@ -197,7 +193,7 @@ function EnemyHealthBar:init(panel, unit)
 		h = self._health_height,
 		color = Color(settings.hp_tint_color)
 	})
-	set_texture_rect(self._hp_left, 0, 48, 32, 32)
+	EnemyHealthBar.set_texture_rect(self._hp_left, 0, 48, 32, 32)
 
 	self._hp_right = self._hp_panel:bitmap({
 		layer = 0,
@@ -207,7 +203,7 @@ function EnemyHealthBar:init(panel, unit)
 		h = self._health_height,
 		color = Color(settings.hp_tint_color)
 	})
-	set_texture_rect(self._hp_right, 96, 48, 32, 32)
+	EnemyHealthBar.set_texture_rect(self._hp_right, 96, 48, 32, 32)
 
 	self._hp_center = self._hp_panel:panel({
 		layer = 0,
@@ -224,7 +220,7 @@ function EnemyHealthBar:init(panel, unit)
 			halign = settings.fill_type == 2 and self.FILL_DIRECTION_ALIGNMENT[settings.fill_direction] or "grow",
 			color = Color(settings.hp_tint_color)
 		})
-		set_texture_rect(hp_center_bitmap, 48, 48, 32, 32)
+		EnemyHealthBar.set_texture_rect(hp_center_bitmap, 48, 48, 32, 32)
 	else
 		local hp_center_bitmap = self._hp_center:panel({
 			halign = self.FILL_DIRECTION_ALIGNMENT[settings.fill_direction]
@@ -237,7 +233,7 @@ function EnemyHealthBar:init(panel, unit)
 				h = self._health_height,
 				color = Color(settings.hp_tint_color)
 			})
-			set_texture_rect(tile, 48, 48, 32, 32)
+			EnemyHealthBar.set_texture_rect(tile, 48, 48, 32, 32)
 		end
 	end
 
@@ -302,7 +298,7 @@ function EnemyHealthBar:_update_outline(text)
 end
 
 function EnemyHealthBar:_anim_fade_panel(panel, start_alpha, alpha, done_cb)
-	over(math.abs(alpha - start_alpha) * self.PANEL_FADE_TIME, function (t)
+	over(math.abs(alpha - start_alpha) * self.PANEL_FADE_TIME, function(t)
 		panel:set_alpha(math.lerp(start_alpha, alpha, t))
 	end)
 	if done_cb then
@@ -311,7 +307,7 @@ function EnemyHealthBar:_anim_fade_panel(panel, start_alpha, alpha, done_cb)
 end
 
 function EnemyHealthBar:_anim_hp_change(hp_center, hp_left, hp_right, start_ratio, ratio)
-	over(not self._health_ratio and 0 or ratio > self._health_ratio and 0.2 or 0.05, function (t)
+	over(not self._health_ratio and 0 or ratio > self._health_ratio and 0.2 or 0.05, function(t)
 		self._health_ratio = math.lerp(start_ratio, ratio, t)
 		hp_center:set_w(math.round(self._health_width * self._health_ratio))
 		if FloatingHealthbars.settings.fill_direction == 1 then
@@ -327,7 +323,7 @@ function EnemyHealthBar:_anim_hp_change(hp_center, hp_left, hp_right, start_rati
 end
 
 function EnemyHealthBar:_anim_hp_fade(hp_panel, start_alpha)
-	over(start_alpha * 0.05, function (t)
+	over(start_alpha * 0.05, function(t)
 		hp_panel:set_alpha(math.lerp(start_alpha, 0, t))
 	end)
 end
@@ -422,10 +418,6 @@ function EnemyHealthBar:alive()
 end
 
 function EnemyHealthBar:destroy()
-	if not self:alive() then
-		return
-	end
-
 	if managers.hud then
 		managers.hud:remove_updator(self._key)
 	end
@@ -440,5 +432,25 @@ function EnemyHealthBar:destroy()
 		self._unit:unit_data()._healthbar = nil
 	end
 
-	self._panel:parent():remove(self._panel)
+	if alive(self._panel) then
+		self._panel:parent():remove(self._panel)
+	end
+end
+
+function EnemyHealthBar.is_valid_unit(unit)
+	local dmg = alive(unit) and unit:character_damage()
+	if not dmg or not dmg.health_ratio or dmg._dead then
+		return false
+	elseif unit:unit_data().name_label_id then
+		return false
+	elseif FloatingHealthbars.settings.damaged_only and dmg:health_ratio() >= 1 then
+		return false
+	end
+	return true
+end
+
+function EnemyHealthBar.set_texture_rect(bitmap, x, y, w, h)
+	local tex_w, tex_h = bitmap:texture_width(), bitmap:texture_height()
+	local x_ratio, y_ratio = tex_w / 128, tex_h / 128
+	bitmap:set_texture_rect(x * x_ratio, y * y_ratio, w * x_ratio, h * y_ratio)
 end

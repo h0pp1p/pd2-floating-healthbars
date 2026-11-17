@@ -14,22 +14,8 @@ function HUDManager:reset_floating_healthbar()
 	if self._unit_healthbar and self._unit_healthbar:alive() then
 		self._unit_healthbar:destroy()
 		self._unit_healthbar = nil
-		self._force_healthbar_update = true
 		self:update_floating_healthbar(0)
-		self._force_healthbar_update = nil
 	end
-end
-
-local function should_show_healthbar(unit)
-	local dmg = alive(unit) and unit:character_damage()
-	if not dmg or not dmg.health_ratio or dmg._dead then
-		return false
-	elseif unit:unit_data().name_label_id then
-		return false
-	elseif FloatingHealthbars.settings.damaged_only and dmg:health_ratio() >= 1 then
-		return false
-	end
-	return true
 end
 
 function HUDManager:update_floating_healthbar(t)
@@ -66,9 +52,9 @@ function HUDManager:update_floating_healthbar(t)
 		self._unit_healthbar = nil
 	end
 
-	if not self._unit_healthbar and should_show_healthbar(unit) then
+	if not self._unit_healthbar and EnemyHealthBar.is_valid_unit(unit) then
 		self._unit_healthbar = unit:unit_data()._healthbar or EnemyHealthBar:new(self._healthbar_panel, unit)
-		self._unit_healthbar:show(self._force_healthbar_update)
+		self._unit_healthbar:show(t == 0)
 	end
 end
 
