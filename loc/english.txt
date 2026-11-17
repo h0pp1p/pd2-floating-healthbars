@@ -45,6 +45,7 @@
 	"menu_floating_healthbars_font_2": "Eurostile",
 	"menu_floating_healthbars_font_3": "Diesel",
 	"menu_floating_healthbars_font_4": "System",
+	"menu_floating_healthbars_font_5": "Eroded",
 	"menu_floating_healthbars_outline": "Text outline",
 	"menu_floating_healthbars_max_distance": "Maximum distance",
 	"menu_floating_healthbars_max_distance_desc": "Maximum distance to an enemy in meters that will still show a healthbar",

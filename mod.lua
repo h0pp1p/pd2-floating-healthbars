@@ -13,6 +13,7 @@ if not FloatingHealthbars then
 			"fonts/font_eurostile_ext",
 			"core/fonts/diesel",
 			"core/fonts/system_font",
+			"fonts/font_eroded"
 		},
 		settings = {
 			last_used_preset = "",
