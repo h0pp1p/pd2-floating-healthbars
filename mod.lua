@@ -120,7 +120,7 @@ if not FloatingHealthbars then
 			managers.system_menu:show({
 				title = managers.localization:text("menu_floating_healthbars_preset_loaded"),
 				text = managers.localization:text("menu_floating_healthbars_preset_loaded_desc", {
-					PRESET = name and name:pretty(true) or managers.localization:text("menu_floating_healthbars_preset_default")
+					PRESET = name or managers.localization:text("menu_floating_healthbars_preset_default")
 				}),
 				button_list = {
 					{
@@ -143,7 +143,7 @@ if not FloatingHealthbars then
 
 		for _, preset_name in pairs(table.map_keys(FloatingHealthbars.presets)) do
 			table.insert(button_list, {
-				text = preset_name:pretty(true),
+				text = preset_name:upper(),
 				callback_func = function() load(preset_name) end
 			})
 		end
@@ -186,7 +186,7 @@ if not FloatingHealthbars then
 
 			managers.system_menu:show({
 				title = managers.localization:text("menu_floating_healthbars_preset_saved"),
-				text = managers.localization:text("menu_floating_healthbars_preset_saved_desc", { PRESET = name:pretty(true) }),
+				text = managers.localization:text("menu_floating_healthbars_preset_saved_desc", { PRESET = name }),
 				button_list = {
 					{
 						text = managers.localization:text("dialog_ok")
